@@ -22,22 +22,18 @@ def reshape_survey(df, year):
 def preprocess():
     survey_full, survey_2023, survey_2024, market_share, morbidity, additional_contrib = load_data()
 
-    # Clean column names
     market_share = clean_column_names(market_share)
     morbidity = clean_column_names(morbidity)
     additional_contrib = clean_column_names(additional_contrib)
 
-    # Reshape surveys
     survey_2023_long = reshape_survey(survey_2023, 2023)
     survey_2024_long = reshape_survey(survey_2024, 2024)
     combined_survey = pd.concat([survey_2023_long, survey_2024_long], ignore_index=True)
     combined_survey = clean_column_names(combined_survey)
 
-    # Compute average Zusatzbeitrag per Kasse per year
     avg_contrib = additional_contrib.groupby(['krankenkasse', 'jahr'])['zusatzbeitrag'].mean().reset_index()
     avg_contrib.rename(columns={'zusatzbeitrag': 'avg_zusatzbeitrag'}, inplace=True)
 
-    # ⬇️ New block: Compute mean competitor contribution rate
     competitor_avg = avg_contrib.copy()
     competitor_avg = competitor_avg.rename(columns={'krankenkasse': 'competitor'})
     competitor_avg['competitor_avg_zusatzbeitrag'] = competitor_avg['avg_zusatzbeitrag']
@@ -47,7 +43,6 @@ def preprocess():
     mean_competitor = mean_competitor[mean_competitor['krankenkasse'] != mean_competitor['competitor']]
     mean_competitor = mean_competitor.groupby(['krankenkasse', 'jahr'])['competitor_avg_zusatzbeitrag'].mean().reset_index()
 
-    # Merge all together
     merged = combined_survey.merge(market_share, on=['krankenkasse', 'jahr'], how='left')
     merged = merged.merge(morbidity, on=['krankenkasse', 'jahr'], how='left')
     merged = merged.merge(avg_contrib, on=['krankenkasse', 'jahr'], how='left')
